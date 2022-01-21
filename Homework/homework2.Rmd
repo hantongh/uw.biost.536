@@ -1,0 +1,195 @@
+---
+title: "BIOST 536 Homework 2"
+author: "Hantong Hu"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = F)
+```
+
+# Responses
+
+1. 
+
+a. If the marketing department wants to make their drug look as impressive as possible, they would need the larger OR between the crude OR and the sex-adjusted OR since these two are both bigger than 1 according to the description. The description stated that male with E are more likely to get D than females, $P[E]$ and $P[\bar{E}]$ are the same, and males and females each evenly divided between the treatment vs. placebo groups. Thus in the pooled sample, compared to the male patients, $P[D|E]$ is smaller, and $P[\bar{D}|E]$ is larger. According to the OR formula, the pooled sample OR will be smaller than the OR of the male (and female) patients, so the market department would prefer the sex-adjusted OR.
+
+```{r q1a, warning=FALSE, message=FALSE, echo =FALSE}
+## Q1 a
+```
+
+b. I would prefer RR for summarizing the effect of the treatment. This is a randomized controlled trial rather than a case-control study, so RR can be estimated and is more intuitive in interpreting. Furthermore, since we don't know if the severe disease is common or not, so the OR might exaggerate the RR.
+
+```{r q1b, warning=FALSE, message=FALSE, echo =F}
+## Q1 b
+```
+
+2. 
+
+a. The DAG is presented as below.
+
+### Table 1. DAG addressing the scientific model for data set "sexbias"
+```{r q2a, warning=FALSE, message=FALSE, echo = F, fig.width=7}
+## Q2 a
+library(dagR)
+
+dag1 <- dag.init(outcome=NULL,exposure=NULL, # these are never used
+                 covs=c(1), # one element for each covariate (1=standard, 2=unmeasured)
+                 arcs=c(0,1, # line from covariate #1 to exposure
+                        1,-1), # line from covariate #1 to outcome
+                 x.name = "Sex",y.name = "Acceptance", # name of exposure and outcome
+                 cov.names = c("Major"),
+                 symbols = c("S", "M", "A"))
+
+p <- dag.draw(dag1)
+```
+
+
+b. By fitting a logistic regression model of acceptance on sex, we found that the estimated OR is 1.84 (95% CI using robust se: 1.62 - 2.09). We conclude that there is statistically significant evidence that male students have higher acceptance than female students (P < 0.0001).
+
+```{r q2b, warning=FALSE, message=FALSE, echo = F, results='hide'}
+## Q2 b
+sexbias <- read.csv("../../Datasets/sexbias.csv")
+
+sexbias.cat <- data.frame(sexbias$X)
+sexbias.cat$sex.cat[sexbias$SEX=="male"] <- 1
+sexbias.cat$sex.cat[sexbias$SEX=="female"] <- 0
+sexbias.cat$accept.cat[sexbias$ACCEPT=="yes"] <- 1
+sexbias.cat$accept.cat[sexbias$ACCEPT=="no"] <- 0
+sexbias.cat$major <- sexbias$MAJOR
+
+q2.fit1 <- glm(accept.cat~sex.cat, family="binomial", data = sexbias.cat)
+summary(q2.fit1)
+
+library("sandwich")
+coef <- q2.fit1$coef
+rob_se <- sqrt(diag(vcovHC(q2.fit1, type = "HC0")))
+conf_tx <- coef[2] + c(0, qnorm(c(0.025, 0.975))) * rob_se[2]
+exp(conf_tx)
+```
+
+c. By fitting a logistic regression model of acceptance on sex adjusted for major, we found that the estimated OR is 0.90 (95% CI using robust se: 0.77 - 1.06). We do not find evidence in the data that male students have higher acceptance than female students (P = 0.22).
+
+```{r q2c, warning=FALSE, message=FALSE, echo = F, results='hide'}
+## Q2 c
+q2.fit2 <- glm(accept.cat~sex.cat+major, family="binomial", data = sexbias.cat)
+summary(q2.fit2)
+
+library("sandwich")
+coef <- q2.fit2$coef
+rob_se <- sqrt(diag(vcovHC(q2.fit2, type = "HC0")))
+conf_tx <- coef[2] + c(0, qnorm(c(0.025, 0.975))) * rob_se[2]
+exp(conf_tx)
+```
+
+d. The results from b and c are very different. If we look at the 2x2 table not separated by MAJOR, we can see that the acceptance rate for female is far less than that of male. However, if we look at the 2x2 table for each MAJOR, we can see that, while the acceptance rate can vary, each major has a similar acceptance rate for both sex. For those majors with high acceptance rate for both male and female, there are very few female applicants, but for other majors with low acceptance rate for both male and female, there are many female applicants. This shows why female acceptance rate is low on the overall scale but not low at all after adjusted for major.
+
+```{r q2d, warning=FALSE, message=FALSE, echo = F, results='hide'}
+## Q2 d
+table(sexbias[,c(2,4)])
+table(sexbias[,c(2,4,3)])
+```
+
+e. I think the analysis adjusted for major best addresses the question of whether the University discriminates against women in graduate school admissions. Though major cannot have an effect on sex, thus making major not a confounder, we see from the above problem that the results were seriously skewed if we only look at the relationship between sex and acceptance and not adjust for major. Thus, we need to adjust for major for a better analysis.
+
+```{r q2e, warning=FALSE, message=FALSE, echo = F}
+## Q2 e
+```
+
+f. There might be some other unmeasured factor for this analysis. For example, the reason why majors with high acceptance rate only has a few female applicants. It might be due to historical reasons, or it might be due to a high sexual harassment rate or sexual discrimination traditions. 
+
+```{r q2f, warning=FALSE, message=FALSE, echo = F}
+## Q2 f
+```
+
+3. 
+
+a. By fitting a logistic regression model A to the asbestos data set, we get
+$$logit(p)= -1.97-0.80*smoke+0.69*asbestos+3.40*asbestos\times{smoke}$$
+-1.97 does NOT estimate a population parameter because in this case-control study, we have a $\pi$ so -1.97 is not equal to the population parameter of $logit P[D|asbestos=0, smoke=0]$. -0.80 estimates a population parameter of $logit P[D|asbestos=0, smoke=1]-logit P[D|asbestos=0, smoke=0]$. 0.69 estimates a population parameter of $log(OR)$ for non-smokers, and 3.40 estimates a population parameter of $log(OR)$ for smokers.
+
+```{r q3a, warning=FALSE, message=FALSE, echo = F, results='hide'}
+## Q3 a
+library(tidyverse)
+asbestos <- read.csv("../../Datasets/asbestos.csv")[,-1]
+asbestos.num <- asbestos %>% mutate_all(as.numeric)-1
+
+modA <- glm(LUNGCA ~ SMOKE*ASBESTOS, data = asbestos.num, family = binomial)
+summary(modA)
+```
+
+b. According to the fitted model, the OR for asbestos among non-smokers is $e^{0.69}=2.00$ (95% CI using robust se: 0.61 - 6.58).
+
+```{r q3b, warning=FALSE, message=FALSE, echo = F, results='hide'}
+## Q3 b
+library(sandwich)
+coef <- modA$coef
+rob_se <- sqrt(diag(vcovHC(modA, type = "HC0")))
+conf_m <- coef[3] + c(0, qnorm(c(0.025, 0.975))) * rob_se[3]
+exp(conf_m)
+```
+
+c. According to the fitted model, the OR for asbestos among smokers is $e^{0.69+3.40}=60.00$ (95% CI using robust se: 21.43 - 167.96).
+
+```{r q3c, warning=FALSE, message=FALSE, echo = F, results='hide'}
+## Q3 c
+asbestos.num$nonsmoke <- -asbestos.num$SMOKE+1
+modA.non <- glm(LUNGCA ~ nonsmoke*ASBESTOS, data = asbestos.num, family = binomial)
+summary(modA.non)
+
+coef <- modA.non$coef
+rob_se <- sqrt(diag(vcovHC(modA.non, type = "HC0")))
+conf_m <- coef[3] + c(0, qnorm(c(0.025, 0.975))) * rob_se[3]
+exp(conf_m)
+```
+
+d. To test the null hypothesis that smokers and non-smokers have the same OR for asbestos, we fit a logistic regression model with a main effect for asbestos exposure, a main effect for smoking, and an interaction term for asbestos exposure and smoking. The estimated OR for smokers is 30 times that of nonsmokers with 95% CI of 6.21 to 144.84. We conclude there is statistically significant evidence of difference in OR between smokers and non-smokers (P<0.001).
+
+```{r q3d, warning=FALSE, message=FALSE, echo = F, results='hide'}
+## Q3 d
+coef <- modA$coef
+rob_se <- sqrt(diag(vcovHC(modA, type = "HC0")))
+conf_m <- coef[4] + c(0, qnorm(c(0.025, 0.975))) * rob_se[4]
+exp(conf_m)
+```
+
+e. By fitting a simple logistic regression model of lung cancer on asbestos in smokers, we found that the estimated OR is 60.00 (95% CI using robust se: 21.43 - 167.96). This result is equal to what we found in part (c) because both of these estimates the population parameter of $OR$ for smokers.
+
+```{r q3e, warning=FALSE, message=FALSE, echo = F, results='hide'}
+## Q3 e
+mod.smoke <- glm(LUNGCA ~ ASBESTOS, data = asbestos.num %>% filter(SMOKE==1), family = binomial)
+summary(mod.smoke)
+
+coef <- mod.smoke$coef
+rob_se <- sqrt(diag(vcovHC(mod.smoke, type = "HC0")))
+conf_m <- coef[2] + c(0, qnorm(c(0.025, 0.975))) * rob_se[2]
+exp(conf_m)
+```
+
+f. By fitting a logistic regression model of lung cancer on asbestos adjusted for smoking status, we found that the estimated OR is 17.86 (95% CI using robust se: 9.29 - 34.31). This result lies in between the results from part (b) and (c) above because, since we know the two groups have very different OR, this result shows an "averaged" OR as a summary of the association between lung cancer and asbestos.
+
+```{r q3f, warning=FALSE, message=FALSE, echo = F, results='hide'}
+## Q3 f
+mod.adj <- glm(LUNGCA ~ SMOKE+ASBESTOS, data = asbestos.num, family = binomial)
+summary(mod.adj)
+
+coef <- mod.adj$coef
+rob_se <- sqrt(diag(vcovHC(mod.adj, type = "HC0")))
+conf_m <- coef[3] + c(0, qnorm(c(0.025, 0.975))) * rob_se[3]
+exp(conf_m)
+```
+
+g. To test the null hypothesis that the smoking-adjusted odds ratio for asbestos is 1, we fit a logistic regression model with a main effect for asbestos exposure adjusted for smoking status. The estimated OR is 17.86 (95% CI using robust se: 9.29 - 34.31). We conclude there is statistically significant evidence that the smoking-adjusted odds ratio for asbestos is not 1 (P<0.001).
+
+```{r q3g, warning=FALSE, message=FALSE, echo = F, results='hide'}
+## Q3 g
+summary(mod.adj)
+```
+
+\pagebreak
+
+# Code
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```

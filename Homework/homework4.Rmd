@@ -1,0 +1,99 @@
+---
+title: "BIOST 536 Homework 4"
+author: "Hantong Hu"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = F)
+```
+
+# Responses
+
+1. By fitting a logistic model relating binary cider exposure (> 10 g/day) to the risk of esophageal cancer, using grouped-linear adjustment for age and the six age groups in the variable agegp, we found that the estimated OR for cider exposure for people in the same age group is 2.187 (95% CI using robust se: 1.552 - 3.083).
+
+```{r q1, warning=FALSE, message=FALSE, echo =FALSE, results='hide'}
+## Q1
+load("../../Datasets/esophcts.RData")
+library(rigr)
+
+esophcts$cider_cat <- as.numeric(esophcts$cider>10)
+mod1 <- regress("odds", case~agegp+cider_cat, data = esophcts)
+round(coef(mod1)[,c(4:6)],3)
+```
+
+2. By fitting a logistic model relating binary cider exposure (> 10 g/day) to the risk of esophageal cancer using dummy variables to adjust for age and the six age groups in the variable agegp, we found that the estimated OR for cider exposure for people in the same age group is 2.027 (95% CI using robust se: 1.441 - 2.852).
+
+```{r q2, warning=FALSE, message=FALSE, echo =F, results='hide'}
+## Q2
+mod2 <- regress("odds", case~as.character(agegp)+cider_cat, data = esophcts)
+round(coef(mod2)[,c(4:6)],3)
+```
+
+3. (a) The results for the exposure variable in Q1 and Q2 are not very different.
+
+> (b) I would prefer the result in Q2 to report in a scientific article because the model in Q1 is less flexible and would cause huge bias if the ORs for each pair of adjacent age group varies a lot.
+
+```{r q3, warning=FALSE, message=FALSE, echo = F}
+## Q3
+```
+
+4. By fitting a logistic model relating binary cider exposure (> 10 g/day) to the risk of esophageal cancer using continuous linear adjustment for age, we found that the estimated OR for cider exposure for people with the same age is 2.168 (95% CI using robust se: 1.537 - 3.058).
+
+```{r q4, warning=FALSE, message=FALSE, echo =F, results='hide'}
+## Q4
+mod4 <- regress("odds", case~age+cider_cat, data = esophcts)
+round(coef(mod4)[,c(4:6)],3)
+```
+
+5. By fitting a logistic model relating binary cider exposure (> 10 g/day) to the risk of esophageal cancer using continuous quadratic adjustment for age, we found that the estimated OR for cider exposure for people with the same age is 1.969 (95% CI using robust se: 1.403 - 2.782).
+
+```{r q5, warning=FALSE, message=FALSE, echo =F, results='hide'}
+## Q5
+mod5 <- glm(case ~ age + I(age^2) + cider_cat, data= esophcts, family="binomial")
+or <- round(exp(coef(mod5)),3)
+orci <- round(exp(suppressMessages(confint(mod5))),3)
+## present results---OR
+cbind(OR=or,orci)
+```
+
+6. (a) In this study, we want to explore the odds ratio of lung cancer for cider exposure (> 10g/day) adjusted for age. We will use a linear spline to adjust for age using 35, 45, 55, 65, and 75 as cutpoints.
+
+> (b) By fitting a logistic model relating binary cider exposure (> 10 g/day) to the risk of esophageal cancer using linear spline adjustment for age, we found that the estimated OR for cider exposure for people with the same age is 1.980 (95% CI using robust se: 1.406 - 2.789).
+
+```{r q6, warning=FALSE, message=FALSE, echo =F, results='hide'}
+## Q6
+mod6 <- regress("odds", case ~ age + s1 + s2 + s3 + s4 + s5 + cider_cat, 
+                data = esophcts)
+round(coef(mod6)[,c(4:6)],3)
+```
+
+7. (a) The results for all three questions are very similar.
+
+> (b) I would use continuous quadratic adjustment for age because the spline method has very subjective intervals, and if cutpoints are close, can have too many parameters. Continuous linear and quadratic are similar, but quadratic may provide a better fit.
+
+```{r q7, warning=FALSE, message=FALSE, echo =F}
+## Q7
+```
+
+8. (a) Models in Q1 and Q2 are not nested.
+
+> (b) Models in Q1 and Q4 are not nested.
+
+> (c) Models in Q4 and Q5 are nested. The "reduced model" is the model in Q4 and when age=0, the full model is the same as the reduced model.
+
+> (d) Models in Q4 and Q6 are nested. The "reduced model" is the model in Q4 and when s1=s2=s3=s4=s5=0 (age from 25 to 34 in this case), the full model is the same as the reduced model.
+
+> (e) Models in Q5 and Q6 are not nested.
+
+```{r q8, warning=FALSE, message=FALSE, echo =F}
+## Q8
+```
+
+\pagebreak
+
+# Code
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```

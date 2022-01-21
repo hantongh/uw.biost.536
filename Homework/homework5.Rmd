@@ -1,0 +1,71 @@
+---
+title: "BIOST 536 Homework 5"
+author: "Hantong Hu"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = F)
+```
+
+# Responses
+
+1. A. The regression model for additive effect is
+$$
+logit(p)=\alpha+\beta\times{variant}
+$$
+where $variant$ is the number of copy of the variant (1 for 1 copy of variant and 2 for 2 copies of variants).
+
+> B. The regression model for dominant effect is
+$$
+logit(p)=\alpha+\beta\times{has\_variant}
+$$
+where $has\_variant$ is whether having more than 0 copy of the variant (0 for 0 variant and 1 for 1 or 2 copies of variants).
+
+> C. The regression model for recessive effect is
+$$
+logit(p)=\alpha+\beta\times{two\_variant}
+$$
+where $two\_variant$ is whether having 2 copies of the variant (0 for 0 or 1 copy of variant and 1 for 2 copies of variants).
+
+> D. None of the models in A, B, C are nested in any other model above.
+
+> E. 
+
+```{r q1e, warning=FALSE, message=FALSE, echo =F}
+## Q1e
+library(dagR)
+
+dag1 <- dag.init(outcome=NULL,exposure=NULL, # these are never used
+                 covs=c(1), # one element for each covariate (1=standard, 2=unmeasured)
+                 arcs=c(1,-1),
+                 x.name = "Variant",y.name = "Disease", # name of exposure and outcome
+                 cov.names = c("Sex"),
+                 symbols = c("Variant", "Sex","Disease"))
+
+a <- dag.draw(dag1, legend = FALSE)
+```
+
+> F. I recommend using model A because it detects a "trend" of whether more copies of variant leads to higher risk of getting the disease. A positive $\hat{\beta}$ indicates a trend suitable for additive and dominant model, and a negative $\hat{\beta}$ indicates a trend suitable for recessive model.
+
+> G. The model adjusted for sex returned the larger OR. The unadjusted model gives a pooled OR, which is attenuated, and since the ORs are all above one, the pooled OR will be smaller.
+
+2. The new abstract is as following:
+
+**Background** A firm mattress is commonly believed to be beneficial for low-back pain, although evidence supporting this recommendation is lacking. This randomized controlled trial investigated whether firm mattress is associated with reducing chronic non-specific low-back pain.
+
+**Methods** 313 adults with chronic non-specific low-back pain were randomised to either a firm mattress ($H_s=5.6$) or a medium-firm mattress ($H_s=2.3$). Primary outcomes were improvements in pain while lying in bed, pain on rising, and
+disability at 90 days. Analysis was by intention-to-treat using multiple logistic regression models.
+
+**Result** There were no difference observed at 90 days in improvement of pain on rising (OR 1.93; 95% CI 0.97-3.86; p=0.061) for the two groups, but patients on medium-firm mattresses had better outcomes for pain in bed (OR 2.36; 95% CI 1.13-4.93; p=0.023) and disability (OR 2.10; 95% CI 1.24-3.56; p=0.006) than patients with firm mattresses. Patients on medium-firm mattress also show significant improvement of disability and pain on rising throughout follow-up (p=0.008).
+
+**Conclusion** Medium-firm mattress overall is associated with an improvement in disability than firm mattress. Future research should focus on whether the firmness of mattress has an effect on reducing low-back pain.
+
+
+\pagebreak
+
+# Code
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```

@@ -1,0 +1,181 @@
+---
+title: "BIOST 536 Homework 1"
+author: "Hantong Hu"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = F)
+```
+
+# Responses
+
+1. Table 1 below shows the descriptive statistics for this data set.
+
+```{r q1, warning=FALSE, message=FALSE, echo =FALSE}
+## Q1
+aml <- read.csv("../../Datasets/leukemia_data.csv")
+source("../table_one.r")
+
+aml.t1 <- data.frame(ptid = aml$ptid)
+
+aml.t1$`Treatment arm` <- factor(aml$tx, levels = c("D","I"), 
+                                 labels = c("Daunorubicin","Idarubicin"))
+aml.t1$Sex <- factor(aml$sex, levels = c("M","F"), labels = c("Male", "Female"))
+aml.t1$`Age (years)` <- aml$age
+aml.t1$`FAB classification` <- aml$fab
+aml.t1$`Karnofsky score` <- aml$karn
+aml.t1$`Baseline white blood cells (1000/mm^3)` <- aml$wbc
+aml.t1$`Baseline platelets (1000/mm^3)` <- aml$plt
+aml.t1$`Baseline hemoglobin (g/dl)` <- aml$hgb
+aml.t1$Evaluable <- factor(aml$eval, levels = c("Y","N"), labels = c("Yes", "No"))
+aml.t1$`Complete remission` <- factor(aml$cr, levels = c("N","Y"), 
+                                      labels = c("Incomplete remission", "Complete Remission"))
+aml.t1$`Status at last follow-up` <- factor(aml$status, levels = c("D","A"), 
+                                            labels = c("Dead", "Alive"))
+aml.t1$`Bone marrow transplant` <- factor(aml$bmtx, levels=c("Y","N"), labels = c("Yes", "No"))
+aml.t1$`Inclusion in 1988 analysis` <- factor(aml$incl, levels = c("Y","N"), 
+                                              labels = c("Yes", "No"))
+
+var_interest <- c("Treatment arm"="cat", "Sex"="cat", "Age (years)"="cont", 
+                  "FAB classification"="median_iqr", "FAB classification"="missing_perc",
+                  "Karnofsky score"="cont",
+                  "Baseline white blood cells (1000/mm^3)"="cont",
+                  "Baseline platelets (1000/mm^3)"="cont",
+                  "Baseline hemoglobin (g/dl)"="cont",
+                  "Evaluable"="cat", "Status at last follow-up"="cat",
+                  "Bone marrow transplant"="cat", "Inclusion in 1988 analysis"="cat"
+                  )
+
+tbl_one <- make_table_one(aml.t1, summary_vars = var_interest, 
+                          split_across = "Complete remission", num_rnd = 1)
+knitr::kable(tbl_one, row.names = F, 
+             caption = "Descriptive statistics for 130 patients with Acute Myelogenous Leukemia")
+```
+
+2. Below are the summarized 2x2 tables.
+
+#### Table 2: 2x2 Table for Male
+```{r q2, warning=FALSE, message=FALSE, echo =F}
+## Q2
+aml.t2 <- data.frame(Sex=aml.t1$Sex)
+aml.t2$`Complete Remission` <- aml.t1$`Complete remission`
+aml.t2$tx <- aml.t1$`Treatment arm`
+
+library(table1)
+table1(~ `Complete Remission`|tx, data = subset(aml.t2, Sex=="Male"), 
+       render.categorical="Freq", overall = F)
+```
+
+#### Table 3: 2x2 Table for Female
+```{r q2b, warning=FALSE, message=FALSE, echo =F}
+table1(~ `Complete Remission`|tx, data = subset(aml.t2, Sex=="Female"), 
+       render.categorical="Freq", overall = F)
+```
+
+#### Table 4: 2x2 Table not using sex as a covariate
+```{r q2c, warning=FALSE, message=FALSE, echo =F}
+table1(~ `Complete Remission`|tx, data = aml.t2, render.categorical="Freq")
+```
+
+3. By having the 2x2 table above not separated by sex, where D is complete remission and E is tretment arm, we can perform an unadjusted analysis. By fitting a logistic regression model of complete remission on treatment arm, we found that the estimated OR is 2.59 (95% CI using robust se: 1.20 - 5.59). We conclude that there is statistically significant evidence that subjects taking idarubicin have better primary clinical outcomes than patients on daunorubicin (P = 0.0155). To calculate the summary measures, we use the following formula:
+
+
+\begin{align*}
+& RR = P[D|E]/P[D|\bar{E}]=(27/65)/(14/65)=1.93 \\
+& RD = P[D|E]-P[D|\bar{E}]=(27/65)-(14/65)=0.2 \\
+& OR = \frac{P[D|E]/(1-P[D|E])}{P[D|\bar{E}]/(1-P[D|\bar{E}])}=(27*51)/(38*14)=2.59
+\end{align*}
+
+> The patients might be more interested in RR because it is more intuitive than the OR, and it shows the risk on a relative scale rather than an absolute scale, so RR gives the most intuitive and pratical information the patients want.
+
+```{r q3, warning=FALSE, message=FALSE, echo =F, results="hide"}
+## Q3
+aml.q3 <- aml[,c("cr","tx")]
+aml.q3$cr.cat[aml.q3$cr=="N"] <- 1
+aml.q3$cr.cat[aml.q3$cr=="Y"] <- 0
+aml.q3$tx.cat[aml.q3$tx=="D"] <- 1
+aml.q3$tx.cat[aml.q3$tx=="I"] <- 0
+fit.aml <- glm(cr.cat~tx.cat, family="binomial", data = aml.q3)
+summary(fit.aml)
+
+library("sandwich")
+coef <- fit.aml$coef
+rob_se <- sqrt(diag(vcovHC(fit.aml, type = "HC0")))
+conf_tx <- coef[2] + c(0, qnorm(c(0.025, 0.975))) * rob_se[2]
+exp(conf_tx)
+```
+
+4. I do not think the analysis of treatment effect is potentially confounded by sex. To consider sex as a confounder, sex should affect the exposure, which is the treatment arm in this question. According to the background information, treatment arm is assigned randomly, so sex does not affect the exposure. Thus, sex can not be a potential confounder.
+
+```{r q4, warning=FALSE, message=FALSE, echo =F}
+## Q4
+```
+
+5. By fitting a logistic regression model of complete remission on treatment arm adjusted for sex, we found that the estimated OR is 2.51 (95% CI using robust se: 1.14 - 5.51). We conclude that there is statistically significant evidence that subjects taking idarubicin have better primary clinical outcomes than patients on daunorubicin adjusted for sex (P = 0.0217).
+
+```{r q5, warning=FALSE, message=FALSE, echo =F, results="hide"}
+## Q5
+aml.q3$sex.cat[aml$sex=="M"] <- 0
+aml.q3$sex.cat[aml$sex=="F"] <- 1
+fit2.aml <- glm(cr.cat~tx.cat+sex.cat, family="binomial", data = aml.q3)
+summary(fit2.aml)
+
+library("sandwich")
+coef <- fit2.aml$coef
+rob_se <- sqrt(diag(vcovHC(fit2.aml, type = "HC0")))
+conf_sex <- coef[2] + c(0, qnorm(c(0.025, 0.975))) * rob_se[2]
+exp(conf_sex)
+```
+
+6. By fitting a logistic regression model of complete remission on treatment arm in male patients, we found that the estimated OR is 2.47 (95% CI using robust se: 0.89 - 6.88). We do not find evidence in the data that, in male patients, those taking idarubicin have better primary clinical outcomes than those on daunorubicin (P = 0.0835).
+
+```{r q6, warning=FALSE, message=FALSE, echo =F, results="hide"}
+## Q6
+fit.aml.m <- glm(cr.cat~tx.cat, family="binomial", data = aml.q3[aml.q3$sex.cat==0,])
+summary(fit.aml.m)
+
+library("sandwich")
+coef <- fit.aml.m$coef
+rob_se <- sqrt(diag(vcovHC(fit.aml.m, type = "HC0")))
+conf_m <- coef[2] + c(0, qnorm(c(0.025, 0.975))) * rob_se[2]
+exp(conf_m)
+```
+
+7. By fitting a logistic regression model of complete remission on treatment arm in female patients, we found that the estimated OR is 2.57 (95% CI using robust se: 0.75 - 8.77). We do not find evidence in the data that, in female patients, those taking idarubicin have better primary clinical outcomes than those on daunorubicin (P = 0.1315).
+
+```{r q7, warning=FALSE, message=FALSE, echo =F, results="hide"}
+## Q7
+fit.aml.f <- glm(cr.cat~tx.cat, family="binomial", data = aml.q3[aml.q3$sex.cat==1,])
+summary(fit.aml.f)
+
+library("sandwich")
+coef <- fit.aml.f$coef
+rob_se <- sqrt(diag(vcovHC(fit.aml.f, type = "HC0")))
+conf_f <- coef[2] + c(0, qnorm(c(0.025, 0.975))) * rob_se[2]
+exp(conf_f)
+```
+
+8. 
+(a) We know that $PAR=\frac{P[D]-P[D|\bar{E}]}{P[D]}$, then
+\begin{align*}
+\frac{P[D]-P[D|\bar{E}]}{P[D]}&=1-\frac{P[D|\bar{E}]}{P[D]}\\
+&=1-\frac{P[D|\bar{E}]}{p_EP[D|E]+(1-p_E)P[D|\bar{E}]}\\
+&=1-\frac{1}{p_E\times{RR}+1-p_E}\\
+&=1-\frac{1}{1+p_E\times{(RR-1)}}
+\end{align*}
+
+(b) $PAR=1-\frac{1}{1+p_E\times{(RR-1)}}=1-\frac{1}{1+0.35\times{(22-1)}}=0.88$. This means that in this population, 88% of the overall risk of fatal lung cancer is due to smoking.
+
+(c) $PAR=1-\frac{1}{1+p_E\times{(RR-1)}}=1-\frac{1}{1+0.05\times{(22-1)}}=0.51$. This means that in this population, 51% of the overall risk of fatal lung cancer is due to smoking.
+
+```{r q8, warning=FALSE, message=FALSE, echo =F}
+```
+
+\pagebreak
+
+# Code
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```

@@ -1,0 +1,38 @@
+---
+title: "BIOST 536 Homework 6"
+author: "Hantong Hu"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = F)
+```
+
+# Responses
+
+3. The coefficients estimated in Models 3a) through 3d) show similar results as models 2a) through 2d), as well as the p-values derived from tests. Larger estimated coefficients in each pair may seem more different, but still not too different. This might be due to models in 2 are adjusted for variables (education, age, parity) that are matched for cases and controls stated in the original study design, so adjusting for them gives similar results to conditional logistic regression using the strata formed by each matched sets.
+
+4. The coefficients estimated in Models 4a) through 4d) show very different results, almost 1.5 to 2 times as large as coefficients in models 2a) through 2d) and 3a) through 3d). This might be due to models in 4 are adjusted for every strata as conditioned in 3, so estimated coefficients can be twice as large as conditional logistic models.
+
+5. The coefficients estimated in Models 5a) through 5d) show very similar results as models 2a) through 2d), with a typical difference less than 0.1. The models in 3 are almost the same as models in 5 except models in 5 use slightly different way to stratify the observations, thus resulting in the sloght differences in the results.
+
+7) The odds ratio estimates of **Model 1d)** most closely resemble those given by Trichopoulos et al., in Table 1. Model 1d) is a ordinary logistic regression model with dummy variables indicating the eight combinations of the spontaneous and induced abortion variables, but not adjusted for any other variables. This might not be the first choice if this study is conducted today because it is too "simple", and comparing all categories to the 0/0 group tells not enough information about spontaneous and induced abortion. The strength is this model was simple and easy to interpret and understand, and the weakness is it did not fully explore the benefits of case-control study and did not address problems such as confounding.
+
+8. **Model 1a)** would have led to estimates the most similar to the ones Hogue presented in both Tables 41-1 and 41-2, though 41-2 used a weird subset of the whole data. This might not be the first choice if this study is conducted today too because it only focused in the effect of induced abortion, but addressed spontaneous abortion in a very weird way, and also did not consider about adjustment. The strength is this model was easy to interpret and understand if induced abortion is what we are only interested in, and the weakness is it also did not fully explore the benefits of case-control study and did not address problems such as confounding.
+
+9. They both used a relatively comprehensive data set to answer a small question, where Trichopoulos answered about how different combinations of induced/spontaneous abortions have various odds ratio of secondary infertility compared to the reference group, and Hogue answered about how induced abortion has an effect on secondary infertility. Both of these results are not very appropriate because they ignored lots of factors such as the matching variables. However, due to this data set, their answers did not differ too much from the most appropriate model (which I think are models 3a to 3d), so the estimates presented in their table are useful, but not very appropriate.
+
+
+
+
+
+
+
+
+
+
+
+
+
