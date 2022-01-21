@@ -1,0 +1,81 @@
+---
+title: "BIOST 536 Data Analysis Project "
+author: "Hantong Hu"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = F)
+```
+
+# Analysis
+```{r datprep, warning=FALSE, message=FALSE, echo =FALSE}
+## Preparation
+setwd("C:/Users/second/Desktop/BIOST 536/DataAnalysisProject")
+load("leprosyCCstudy.Rdata")
+head(leprosyCCstudy)
+```
+
+
+```{r table1, warning=FALSE, message=FALSE, echo =FALSE}
+## table1
+library(table1)
+lep.table <- leprosyCCstudy
+lep.table$BCG <- factor(lep.table$BCG, levels = c("yes","no"), labels = c("Yes","No"))
+label(lep.table$BCG) <- "BCG vaccination scar"
+label(lep.table$age) <- "Age category"
+label(lep.table$sex) <- "Sex"
+label(lep.table$school) <- "Schooling level"
+label(lep.table$house) <- "Housing type"
+lep.table$D <- factor(lep.table$D, levels = c(1,0), labels = c("Case","Control"))
+
+lep.table <- lep.table %>% 
+  mutate(
+    bcg30 = case_when(
+      age %in% c("30-44", "45+") ~ as.character(BCG),
+      TRUE ~ "under 30"
+    )
+  )
+lep.table$bcg30 <- factor(lep.table$bcg30, 
+                        levels = c("Yes","No","under 30"), 
+                        labels = c("Yes","No", "Under 30"))
+label(lep.table$bcg30) <- "BCG vaccination for age 30+"
+
+table1(~BCG+bcg30++age+sex+school+house|D, data = lep.table)
+```
+
+
+```{r dag, warning=FALSE, message=FALSE, echo =FALSE}
+## dag
+library(dagR)
+dag1 <- dag.init(outcome=NULL,exposure=NULL, # these are never used
+                 covs=c(1,1,1,1), # one element for each covariate (1=standard, 2=unmeasured)
+                 arcs=c(2,-1, # Age -> Leprosy
+                        2,0, # Age -> BCG
+                        2,3, # Age -> School
+                        1,0, # Sex -> BCG
+                        1,-1, # Sex -> Leprosy
+                        1,3 # Sex -> School
+                        
+                        ),
+                 xgap = 0.1, ygap = 0.08, len = 0.15,
+                 x.name = "BCG",y.name = "Leprosy", # name of exposure and outcome
+                 cov.names = c("Sex","Age","School","House"),
+                 symbols = c("BCG", "Sex","Age","School","House","Leprosy"))
+
+dag.draw(dag1, legend = FALSE)
+```
+
+```{r analysis, warning=FALSE, message=FALSE, echo =FALSE}
+# Analysis
+library(rigr)
+regress("odds", D ~ BCG+age+sex, data = leprosyCCstudy)
+```
+
+\pagebreak
+
+# Code
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
